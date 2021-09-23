@@ -27,7 +27,7 @@ impl RusDbConnection {
     }
     pub fn collection<T>(&self, collection: &str) -> RusCollection<T>
     where
-        T: Serialize + DeserializeOwned + Clone,
+        T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
     {
         RusCollection::create(collection.to_string(), self.clone())
     }
@@ -140,13 +140,20 @@ mod tests {
 
     #[tokio::test]
     async fn it_works() {
-        let client = RusDbConnection::connect("http://127.0.0.1:3010").await;
+        let client = RusDbConnection::connect("http://127.0.0.1:8009").await;
         let mut col = client.collection::<TestDoc>("test");
-        let doc = col
-            .get(bson::from_bson(bson!("56a0212f-e21d-48de-81af-7fdc08fee5a2")).unwrap())
+        col.truncate().await.unwrap();
+        let doca = col
+            .insert(TestDoc {
+                hello: "world".to_string(),
+            })
             .await
-            .unwrap()
-            .expect("doc is not there");
-        println!("DOC = {:?}", doc.document);
+            .unwrap();
+        println!("{:?}", doca);
+        let mut res_find = col.find_all(None).await.unwrap();
+        println!("{:?}", res_find);
+        for doc in res_find.drain(..) {
+            doc.delete().await.unwrap();
+        }
     }
 }

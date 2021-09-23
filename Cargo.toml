@@ -1,10 +1,9 @@
 [package]
 name = "rusdb-core"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2018"
 repository = "https://github.com/envis10n/rusdb-core"
 description = "Database driver for `rusdb`, which uses gRPC to communicate."
-license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 documentation = "https://docs.rs/rusdb-core"

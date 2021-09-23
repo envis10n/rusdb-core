@@ -9,16 +9,25 @@ use crate::RusDbConnection;
 #[derive(Clone)]
 pub struct RusDocument<T>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
 {
     _id: Uuid,
     collection: RusCollection<T>,
     pub document: T,
 }
 
+impl<T> std::fmt::Debug for RusDocument<T>
+where
+    T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.document)
+    }
+}
+
 impl<T> RusDocument<T>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
 {
     pub fn create(_id: Uuid, collection: RusCollection<T>, document: T) -> Self {
         Self {
@@ -48,8 +57,11 @@ where
     }
     pub fn to_document(&self) -> Result<Document, bson::ser::Error> {
         let mut doc = bson::to_document(&self.document)?;
-        doc.insert("_id", self._id.clone());
+        doc.insert("_id", bson::to_bson(&self._id)?);
         Ok(doc)
+    }
+    fn id_doc(&self) -> Result<Document, bson::ser::Error> {
+        Ok(doc!("_id": bson::to_bson(&self._id)?))
     }
     pub fn to_vec(&self) -> Result<Vec<u8>, bson::ser::Error> {
         bson::to_vec(&self.to_document()?)
@@ -57,14 +69,14 @@ where
     pub async fn sync(&mut self) -> Result<(), Status> {
         let doc = self.to_document().unwrap();
         self.collection
-            .update(doc!("_id": self._id), doc, Some(1))
+            .update(self.id_doc().unwrap(), doc, Some(1))
             .await?;
         Ok(())
     }
     pub async fn delete(mut self) -> Result<(), Status> {
         if self
             .collection
-            .remove(doc!("_id": self._id), Some(1))
+            .remove(self.id_doc().unwrap(), Some(1))
             .await?
             == 1
         {
@@ -79,7 +91,7 @@ where
 #[derive(Clone)]
 pub struct RusCollection<T>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
 {
     collection: String,
     conn: RusDbConnection,
@@ -88,7 +100,7 @@ where
 
 impl<T> RusCollection<T>
 where
-    T: Serialize + DeserializeOwned + Clone,
+    T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
 {
     pub fn create(collection: String, conn: RusDbConnection) -> Self {
         Self {
