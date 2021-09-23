@@ -89,7 +89,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct RusCollection<T>
+pub struct RusCollection<T = Document>
 where
     T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
 {

@@ -25,10 +25,13 @@ impl RusDbConnection {
         let client = RusDbClient::connect(dst).await.unwrap();
         Self { client }
     }
-    pub fn collection<T>(&self, collection: &str) -> RusCollection<T>
+    pub fn collection_typed<T>(&self, collection: &str) -> RusCollection<T>
     where
         T: Serialize + DeserializeOwned + Clone + std::fmt::Debug,
     {
+        RusCollection::create(collection.to_string(), self.clone())
+    }
+    pub fn collection(&self, collection: &str) -> RusCollection {
         RusCollection::create(collection.to_string(), self.clone())
     }
     pub async fn insert(
@@ -130,7 +133,7 @@ impl RusDbConnection {
 #[cfg(test)]
 mod tests {
     use crate::RusDbConnection;
-    use bson::{bson, doc};
+    use bson::doc;
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Clone, Default, Debug)]
@@ -141,7 +144,7 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let client = RusDbConnection::connect("http://127.0.0.1:8009").await;
-        let mut col = client.collection::<TestDoc>("test");
+        let mut col = client.collection_typed::<TestDoc>("test");
         col.truncate().await.unwrap();
         let doca = col
             .insert(TestDoc {
